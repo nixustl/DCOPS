@@ -1,0 +1,349 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Data Ops";
+}
+
+<div>
+    <form method="post" id="mainForm" name="mainForm">
+        <input type="hidden" id="hidEmailBody" name="hidEmailBody" value="hidEmailBody" />
+        <input type="hidden" id="hidPublish" name="hidPublish" value="" />
+        <input type="hidden" id="hidMessage" name="hidMessage" value="" />
+        <input type="hidden" id="hidRunStamp" name="hidRunStamp" value="" />
+        <input type="hidden" id="hidViewDate" name="hidViewDate" value="" />
+
+        <div class="row" style="height:800px;width:80%;">
+            <div class="col-sm-6" style="width:100%;background-color: whitesmoke; border:solid blue 2px;">
+                <div style="font-size:24px;font-weight:bold;">Data Ops Sensor Data</div>                    
+                <label id="lblDate" name="lblDate"></label>
+                <br /> <br />
+
+                <div id="result">
+   
+                </div>
+                <div id="divSensorData" name="divSensorData" style="width:100%;margin-bottom:25px">
+                    <table id="SensorTable" name="SensorTable" class="sensorTblClass"></table>
+                    <span id="spnRunTime" name="spnRunTime">
+                        <label id="lblRunStamp" name="lblRunStamp" style="margin-bottom:80px; position:absolute;width:100%; font-size:12px; height:18px;"></label>
+                    </span>
+                </div>
+                <div style="margin-left:7%;">
+                    <table>
+                        <tr>
+                            <td>
+                                <input type="button" onclick="getSensorData()" value="Fetch" title="Query RoomAlert boxes" />
+                            </td>
+                            <td>
+                                <input type="button" onclick="publishData()" value="Fetch And Publish" title="Push to RoomAlert Team's feed" />
+                            </td>
+                            <td>
+                                <input type="button" onclick="SaveToDB()" value="Fetch And Save" title="Save to database" />
+                            </td>
+                        </tr>
+                        <tr><td></td></tr>
+                    </table>
+                    <hr id="hrBreak" style="border:groove 2px #99CCFF; opacity:40%; width:92%; " />
+                    <span style="font-weight:bold;">History</span>
+                    <br />
+                    <div class="form-group">
+                        <label>Select Date Range:</label>
+                        <!-- Visible display input -->
+                        <input type="text" id="datePickerDisplay" class="form-control" readonly />
+                    </div>
+                    <table>
+                        <tr>
+                            <td style="padding-right:4px;">
+                                <select id="ddlDates">
+                                    <option value="" selected disabled>--- select ---</option>
+                                </select>
+                            </td>
+                            <td> 
+                                <input type="button" style="width:80px;" value="View" onclick="viewHistory()" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="historyModal" style="width:90%"  data-bs-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog  modal-dialog-centered  modal-xl" style="width:60%" role="document">
+                <div class="modal-content" style="background-color:#F0F8FF;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="HistoryModalTitle">Title</h5>
+                    </div>
+                    <div class="modal-body" id="HistoryModalBody">
+                    </div>
+                    <div class="modal-footer center" style="text-align:center;">
+                        <button type="button" data-bs-dismiss="modal">Okay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="stdModal" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="background-color:#F0F8FF;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="stdModalTitle">Title</h5>
+                    </div>
+                    <div class="modal-body" id="stdModalBody">
+                        Body 
+                    </div>
+                    <div class="modal-footer center" style="text-align:center;">
+                        <button type="button" data-bs-dismiss="modal">Okay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="waitModal" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="background-color:#F0F8FF;">
+                    <div class="modal-header" style="background-color:#F0F8FF;">
+                        <h5 class="modal-title" id="exampleModalLabel">DC Ops</h5>
+                    </div>
+                    <div class="modal-body" id="stdModalBody" style="padding-top:20px; padding-bottom:20px; border-top:solid 2px white;font-size:18px;background-color:#F0F8FF;text-align:center;">
+                        Please Wait...
+                    </div>
+                    <div class="modal-footer center" style="border-top:solid 2px white;">
+                        <br /><br /><br /><br />
+                    </div>
+                </div>
+            </div>
+        </div>
+     </form>
+
+    
+    @section Scripts {
+        <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    getSensorData();
+                    PopulateDatesDropDown();
+                });
+                const successCode = 0;
+                var waitModal = new bootstrap.Modal(document.getElementById('waitModal'));
+
+                $(function() {
+                    // Initialize the JavaScript daterangepicker
+                    $('#datePickerDisplay').daterangepicker({
+                        locale: { format: 'YYYY-MM-DD' },
+                        startDate: moment().subtract(6, 'days'),
+                        endDate: moment()
+                    }, function(start, end, label) {
+                        // Update hidden inputs whenever the user picks a new range
+                        $('#startDate').val(start.format('YYYY-MM-DD'));
+                        $('#endDate').val(end.format('YYYY-MM-DD'));
+                    });
+
+                    // Populate initial default hidden values on page load
+                    $('#startDate').val($('#datePickerDisplay').data('daterangepicker').startDate.format('YYYY-MM-DD'));
+                    $('#endDate').val($('#datePickerDisplay').data('daterangepicker').endDate.format('YYYY-MM-DD'));
+                });
+
+
+
+
+
+                const now = new Date();
+                document.getElementById("lblDate").innerHTML = now.toDateString();
+ 
+                $('#ddlDates').on('change', function() {
+                    var selectedValue = $('#ddlDates').val();
+                });
+
+                  async function viewHistory(){
+                    // var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
+                    // myModal.show();
+                    historyDDL = document.getElementById("ddlDates");
+                    document.getElementById("hidViewDate").value = historyDDL.value;
+                    const returnVal = await fetch("/Index?handler=ViewHistory", {
+                      method: "POST",
+                      data: JSON.stringify({ targetDate: historyDDL.value }),
+                      body: $('#mainForm').serialize(),
+                      headers: {
+                        "Content-type": "application/x-www-form-urlencoded",
+                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                      }
+                  });
+                  const data = await returnVal.json();
+                  if (data.isError) {
+                  } else {
+                  }
+                    document.getElementById("HistoryModalBody").innerHTML = data;
+                    document.getElementById("HistoryModalTitle").innerHTML = "Data pulled: "  + historyDDL.value;
+                    $('#historyModal').modal('show');               
+                 }
+
+                async function publishData(){
+                    // var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
+                    // myModal.show();
+                    await getSensorData();
+
+                    document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
+                    document.getElementById("hidPublish").value = "1";
+
+                    const returnVal = await fetch("/Index?handler=PublishData", {
+                      method: "POST",
+                      data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
+                      body: $('#mainForm').serialize(),
+                      headers: {
+                        "Content-type": "application/x-www-form-urlencoded",
+                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                      }
+                  });
+                  const data = await returnVal.json();
+                  if (data.isError) {
+                      document.getElementById("hidMessage").value = data.msg;
+                      document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Publish failed ***</span>";
+                      document.getElementById("stdModalBody").innerHTML = data.msg;
+                      $('#stdModal').modal('show');
+                  } else {
+                      document.getElementById("stdModalTitle").innerHTML = "<span style='font-weight:bold;'>DC OPS</span>";
+                      document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
+                      $('#stdModal').modal('show');
+                 }
+                   // myModal.hide();
+                 }
+                async function SaveToDB(){
+                    document.getElementById("spnRunTime").style.display = "none";
+                    document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
+                    await getSensorData();
+                    // waitModal.show();
+                    const returnVal = await fetch("/Index?handler=SaveToDB", {
+                        method: "POST",
+                        data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
+                        body: $('#mainForm').serialize(),
+                        headers: {
+                        "Content-type": "application/x-www-form-urlencoded",
+                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                        }
+                    });
+                    // document.getElementById("waitModal").modal("close");
+                    const data = await returnVal.json();
+                    document.getElementById("spnRunTime").style.display = "block"
+                    
+                    if (data.isError) { 
+                        document.getElementById("hidMessage").value = data.msg;
+                        document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Save to database failed ***</span>";
+                        document.getElementById("stdModalBody").innerHTML = data.msg;
+                        $('#stdModal').modal('show');
+                    } else {
+                        document.getElementById("stdModalTitle").innerHTML = "<span style='font-weight:bold;'>DC OPS</span>";
+                        document.getElementById("stdModalBody").innerHTML = "<span>Data saved to database.</span>"
+                        $('#stdModal').modal('show');
+                        PopulateDatesDropDown();
+                    }
+                }
+                async function DBFetch(){
+                    var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
+                    myModal.show();
+                    const returnVal = await fetch("/Index?handler=DBFetch", {
+                      method: "POST",
+                      data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
+                      body: $('#mainForm').serialize(),
+                      headers: {
+                        "Content-type": "application/x-www-form-urlencoded",
+                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                      }
+                  });
+                  const data = await returnVal.json();
+                  if (data.isError) {
+                      document.getElementById("hidMessage").value = data.msg;
+                      document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Publish failed ***</span>";
+                      document.getElementById("stdModalBody").innerHTML = data.msg;
+                      $('#stdModal').modal('show');
+                  } else {
+                      document.getElementById("stdModalTitle").innerHTML = "<span style='font-weight:bold;'>DC OPS</span>";
+                      document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
+                      $('#stdModal').modal('show');
+                 }
+                  myModal.hide();
+                }
+                async function PopulateDatesDropDown(){
+                      const response = await fetch('/Index?handler=PopulateDatesDropDown'); 
+                      const data = await response.json();
+                      dropdown = document.getElementById("ddlDates");
+                      dropdown.length = 0;
+
+                      data.forEach(item => {
+                          const option = new Option(item);
+                          dropdown.add(option);
+                        });
+                }
+                async function getSensorData() { 
+                  $('#waitModal').modal('show');
+                  var runStamp = new Date().toLocaleString(); 
+                  try {
+                        document.getElementById("hidRunStamp").value = runStamp;
+                        const tableBody = document.getElementById("SensorTable");
+                        tableBody.innerHTML="";
+
+                        const response = await fetch('/Index?handler=GetData'); // hits 'OnGetGetData' server side
+                        const data = await response.json(); 
+
+                        const generalResponse = await fetch('/Index?handler=GetGeneral');
+                        const genData = await generalResponse.json();
+
+                        document.body.style.cursor = 'wait';
+
+                        for (var sensor of data) {
+                            // alert("getSensorData():" + sensor.label);
+                            var row = tableBody.insertRow();  
+                            var cell1 = row.insertCell(0);cell1.style.width="320px"; // sensor name
+                            var cell2 = row.insertCell(1);cell2.style.width="180px"; // temp
+                            var cell3 = row.insertCell(2);cell3.style.width="180px"; // humidity
+                            var cell4 = row.insertCell(3);cell4.style.width="180px"; // alarm
+                            // var cell5 = row.insertCell(4);cell5.style.width="180px"; // timestamp
+                            cell1.innerHTML = sensor.label;
+                            cell2.innerHTML = sensor.temperature;
+                            cell3.innerHTML = sensor.humidity;
+                            if (sensor.alarmState) {
+                                cell4.innerHTML = "<span style='color:red;font-weight:bold;'>"+sensor.alarmState+"</span>";
+                            } else {
+                                cell4.innerHTML = sensor.alarmState;
+                            }
+                            // cell5.innerHTML = runStamp;
+                        }
+                        
+                        var header = tableBody.createTHead();
+                        var row = header.insertRow(0);
+                        // cell = row.insertCell(0);
+                        // cell.innerHTML = "<b>TimeStamp</b>";
+                        var cell = row.insertCell(0);
+                        cell.innerHTML = "<b>Alarm</b>"; cell.classList.add("sensorWidth");
+                        var cell_humidity = row.insertCell(0);
+                        cell_humidity.innerHTML = "<b>Humidity</b>";
+                        cell = row.insertCell(0);
+                        cell.innerHTML = "<b>Temperature</b>";
+                        cell = row.insertCell(0);
+                        cell.innerHTML = "<b>Sensor</b>";
+                        document.getElementById("lblRunStamp").innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
+                        document.getElementById("lblRunStamp").style.left = document.getElementById("SensorTable").getBoundingClientRect().left + "px";
+                        // alert("leaving getsensordata:"+ document.getElementById('divSensorData').innerHTML);
+                    } catch (error) {
+                        alert('getSensorData Error:' + error);
+                    }
+                    $('#waitModal').modal('hide');
+                    document.body.style.cursor = 'default';
+                    
+                }
+                async function PrePublish() {
+                    alert("Prepublish "+ document.getElementById('divSensorData').innerHTML);
+                    document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
+                    document.getElementById("hidPublish").value = "1";
+                    alert("leaving PrePublish");
+                }
+
+                $('#stdModal').on('show.bs.modal', function(){ 
+                    // $('#stdModalBody').html("modal body goes here...");
+                })
+                $('#waitModal').on('show.bs.modal', function(){
+                    // $('#stdModalBody').html("modal body goes here...");
+                })
+                $('#largeModal').on('show.bs.modal', function(){
+                    //$('#largeModalBody').html("modal body goes here...");
+                })
+
+        </script>
+}
+
+</div>

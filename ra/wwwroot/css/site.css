@@ -1,0 +1,81 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+.cols {
+    border-color:blue;
+}
+.deviceCol{
+    width:220px;color:red;
+}
+.sensorTblClass {
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    margin-left: auto;
+    margin-right: auto;
+}
+.sensorWidth{
+    width:120px;
+}
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.btn-rounded {
+    background-color: #007bff;
+    color: white;
+    width:120px;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 8px; /* Controls the corner roundness */
+}
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+    color: black;
+    width: 180px;
+    /*    padding: 12px 24px;
+*/ cursor: pointer;
+    font-size: 16px;
+    border-radius: 8px;
+}
+.datepicker,
+.table-condensed {
+    width: 220px;
+    height: 220px;
+    font-size: x-small;
+}
