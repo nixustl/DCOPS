@@ -11,6 +11,8 @@
         <input type="hidden" id="hidMessage" name="hidMessage" value="" />
         <input type="hidden" id="hidRunStamp" name="hidRunStamp" value="" />
         <input type="hidden" id="hidViewDate" name="hidViewDate" value="" />
+        <input type="hidden" id="hidStartDate" name="hidStartDate" value="" />
+        <input type="hidden" id="hidEndDate" name="hidEndDate" value="" />
 
         <div class="row" style="height:800px;width:80%;">
             <div class="col-sm-6" style="width:100%;background-color: whitesmoke; border:solid blue 2px;">
@@ -43,12 +45,12 @@
                         <tr><td></td></tr>
                     </table>
                     <hr id="hrBreak" style="border:groove 2px #99CCFF; opacity:40%; width:92%; " />
-                    <span style="font-weight:bold;">History</span>
+                    <span style="font-weight:bold; font-size:18px; ">History</span>
                     <br />
                     <div class="form-group">
                         <label>Select Date Range:</label>
                         <!-- Visible display input -->
-                        <input type="text" id="datePickerDisplay" class="form-control" readonly />
+                        <input type="text" id="datePickerDisplay" name="datePickerDisplay" class="form-control" readonly style="width:300px; " />
                     </div>
                     <table>
                         <tr>
@@ -117,37 +119,57 @@
         <script>
                 document.addEventListener('DOMContentLoaded', () => {
                     getSensorData();
-                    PopulateDatesDropDown();
+                    // PopulateDatesDropDown();
                 });
                 const successCode = 0;
                 var waitModal = new bootstrap.Modal(document.getElementById('waitModal'));
 
-                $(function() {
-                    // Initialize the JavaScript daterangepicker
+                $(function() { 
+                    // Initialize the JavaScript daterangepicker 
                     $('#datePickerDisplay').daterangepicker({
                         locale: { format: 'YYYY-MM-DD' },
-                        startDate: moment().subtract(6, 'days'),
+                        startDate: moment().subtract(1, 'months'),
                         endDate: moment()
-                    }, function(start, end, label) {
+                    }, function(start, end, label) { 
                         // Update hidden inputs whenever the user picks a new range
                         $('#startDate').val(start.format('YYYY-MM-DD'));
                         $('#endDate').val(end.format('YYYY-MM-DD'));
+                        
+                        console.log("hidStartDate: "+ $('#hidStartDate').val());
+                        console.log("hidEndDate: "+ $('#hidEndDate').val());
                     });
+
+                    $('#hidStartDate').val($('#datePickerDisplay').data('daterangepicker').startDate);
+                    $('#hidEndDate').val($('#datePickerDisplay').data('daterangepicker').endDate);
 
                     // Populate initial default hidden values on page load
                     $('#startDate').val($('#datePickerDisplay').data('daterangepicker').startDate.format('YYYY-MM-DD'));
                     $('#endDate').val($('#datePickerDisplay').data('daterangepicker').endDate.format('YYYY-MM-DD'));
+ 
+                    PopulateDatesDropDown();
+
                 });
 
-
-
-
-
+                function am(label,message)
+                {
+                    alert(label + ": "+message);
+                }
                 const now = new Date();
                 document.getElementById("lblDate").innerHTML = now.toDateString();
  
                 $('#ddlDates').on('change', function() {
                     var selectedValue = $('#ddlDates').val();
+                });
+
+                $('#datePickerDisplay').on('apply.daterangepicker', function(ev, picker) {
+                    // Access the selected start and end dates
+                    var startDate = picker.startDate.format('YYYY-MM-DD');
+                    var endDate = picker.endDate.format('YYYY-MM-DD');
+
+                    $('#hidStartDate').val(startDate);
+                    $('#hidEndDate').val(endDate);
+
+                    PopulateDatesDropDown();
                 });
 
                   async function viewHistory(){
@@ -259,15 +281,23 @@
                   myModal.hide();
                 }
                 async function PopulateDatesDropDown(){
-                      const response = await fetch('/Index?handler=PopulateDatesDropDown'); 
-                      const data = await response.json();
-                      dropdown = document.getElementById("ddlDates");
-                      dropdown.length = 0;
-
-                      data.forEach(item => {
-                          const option = new Option(item);
-                          dropdown.add(option);
-                        });
+                      // const response = await fetch('/Index?handler=PopulateDatesDropDown'); 
+                      const response = await fetch("/Index?handler=PopulateDatesDropDown", {
+                      method: "POST",
+                      // data: JSON.stringify({ "sDate": historyDDL.value }),
+                      body: $('#mainForm').serialize(),
+                      headers: {
+                        "Content-type": "application/x-www-form-urlencoded",
+                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                      }
+                    });
+                    const data = await response.json();
+                    dropdown = document.getElementById("ddlDates");
+                    dropdown.length = 0;
+                    data.forEach(item => {
+                        const option = new Option(item);
+                        dropdown.add(option);
+                    });
                 }
                 async function getSensorData() { 
                   $('#waitModal').modal('show');
@@ -330,7 +360,6 @@
                     alert("Prepublish "+ document.getElementById('divSensorData').innerHTML);
                     document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
                     document.getElementById("hidPublish").value = "1";
-                    alert("leaving PrePublish");
                 }
 
                 $('#stdModal').on('show.bs.modal', function(){ 
@@ -343,6 +372,7 @@
                     //$('#largeModalBody').html("modal body goes here...");
                 })
 
+           
         </script>
 }
 

@@ -39,11 +39,10 @@ namespace ra.Pages
 
             return new JsonResult("ok");
         }
-        public async Task<JsonResult> OnGetPopulateDatesDropDown()
+        public async Task<JsonResult> OnPostPopulateDatesDropDown()
         {
             List<string> sDates = await Tools.PopulateDates();
-
-                return new JsonResult(sDates);
+            return new JsonResult(sDates);
         }
         public JsonResult OnGetGetData()
         {

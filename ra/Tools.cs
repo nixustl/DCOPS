@@ -110,7 +110,7 @@ namespace ra
             List<string> sDates = new List<string>();
             string returnHtml = string.Empty;
             reader.ReadAsync();
-            if(reader.HasRows)
+            if(reader.HasRows) 
             {
                 returnHtml = reader.GetFieldValue<string>(0);
             } else
