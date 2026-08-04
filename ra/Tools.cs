@@ -120,23 +120,19 @@ namespace ra
              
             return returnHtml;
         }
-        public async static Task<List<string>> PopulateDates()
+        public async static Task<List<string>> PopulateDates(DateTime startDate, DateTime endDate)
         {
             string connectionString = ApplicationConfiguration.GetSetting("ConnectionStrings:Postgres");
-
             await using var dataSource = NpgsqlDataSource.Create(connectionString);
-
-            //DCOPS_Message DCOPS_return_message = new DCOPS_Message();
-   
-            await using var command = dataSource.CreateCommand("select run_dt from \"sensorHistory\" order by run_dt desc;");
-
+            await using var command = dataSource.CreateCommand("select run_dt from \"sensorHistory\" where CAST(run_dt AS date) >= $1 and CAST(run_dt AS date) <= $2 order by run_dt desc");
+            command.Parameters.AddWithValue(startDate);
+            command.Parameters.AddWithValue(endDate);
             await using var reader = await command.ExecuteReaderAsync();
             List<string> sDates = new List<string>();
             while (await reader.ReadAsync())
             {
                 sDates.Add(reader.GetFieldValue<DateTime>(0).ToString());
             }
-
             return sDates;
         }
         public async static Task<DCOPS_Message> SaveToDB(string html, DateTime runDate)

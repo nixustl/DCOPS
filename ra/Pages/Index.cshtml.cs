@@ -41,7 +41,10 @@ namespace ra.Pages
         }
         public async Task<JsonResult> OnPostPopulateDatesDropDown()
         {
-            List<string> sDates = await Tools.PopulateDates();
+            DateTime dtStart = DateTime.Parse(Request.Form["datePickerDisplay"].ToString().Split(" - ")[0]);
+            DateTime dtEnd = DateTime.Parse(Request.Form["datePickerDisplay"].ToString().Split(" - ")[1]);
+
+            List<string> sDates = await Tools.PopulateDates(dtStart, dtEnd);
             return new JsonResult(sDates);
         }
         public JsonResult OnGetGetData()

@@ -50,7 +50,7 @@
                     <div class="form-group">
                         <label>Select Date Range:</label>
                         <!-- Visible display input -->
-                        <input type="text" id="datePickerDisplay" name="datePickerDisplay" class="form-control" readonly style="width:300px; " />
+                        <input type="text" id="datePickerDisplay" name="datePickerDisplay" class="form-control" readonly style="width:300px; border:solid 2px #99CCFF;" />
                     </div>
                     <table>
                         <tr>
@@ -59,8 +59,8 @@
                                     <option value="" selected disabled>--- select ---</option>
                                 </select>
                             </td>
-                            <td> 
-                                <input type="button" style="width:80px;" value="View" onclick="viewHistory()" />
+                            <td>  
+                                <input type="button" style="width:80px;" value="View" id="btnView" name="btnView " onclick="viewHistory()" title=" View selected history record" />
                             </td>
                         </tr>
                     </table>
@@ -135,18 +135,24 @@
                         $('#startDate').val(start.format('YYYY-MM-DD'));
                         $('#endDate').val(end.format('YYYY-MM-DD'));
                         
+                      
+
+
                         console.log("hidStartDate: "+ $('#hidStartDate').val());
                         console.log("hidEndDate: "+ $('#hidEndDate').val());
-                    });
 
-                    $('#hidStartDate').val($('#datePickerDisplay').data('daterangepicker').startDate);
-                    $('#hidEndDate').val($('#datePickerDisplay').data('daterangepicker').endDate);
+                    });
+                                           
+                    // $('#hidStartDate').val($('#datePickerDisplay').data('daterangepicker').startDate);
+                    // $('#hidEndDate').val($('#datePickerDisplay').data('daterangepicker').endDate);
 
                     // Populate initial default hidden values on page load
                     $('#startDate').val($('#datePickerDisplay').data('daterangepicker').startDate.format('YYYY-MM-DD'));
                     $('#endDate').val($('#datePickerDisplay').data('daterangepicker').endDate.format('YYYY-MM-DD'));
- 
+     
+
                     PopulateDatesDropDown();
+                    console.log("daterangepicker");
 
                 });
 
@@ -298,6 +304,19 @@
                         const option = new Option(item);
                         dropdown.add(option);
                     });
+                    if (dropdown.length == 0) {
+                        document.getElementById("btnView").disabled = true;
+                        document.getElementById("btnView").style.opacity = "0.5";
+                        document.getElementById("stdModalTitle").innerHTML = "<span style='color:black;font-weight:bold;'>No records found</span>";
+                        document.getElementById("stdModalBody").innerHTML = "Please change the search criteria.";
+                        document.getElementById("btnView").title = "No records to view";
+                        $('#stdModal').modal('show');
+                    } else {
+                        document.getElementById("btnView").disabled = false;
+                        document.getElementById("btnView").style.opacity = "1";
+                        document.getElementById("btnView").title = "View selected history record";
+                    };
+
                 }
                 async function getSensorData() { 
                   $('#waitModal').modal('show');
