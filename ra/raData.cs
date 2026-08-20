@@ -1,4 +1,14 @@
-﻿namespace ra
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using Newtonsoft.Json.Linq;
+using ra.Pages;
+using System.Reflection.Metadata;
+using System.Web;
+//using static System.ClientModel.Primitives.JsonPatch;
+
+namespace ra
 {
     public class raData
     {
@@ -152,4 +162,72 @@ public class DCOPS_Message
     public int errorNumber { get; set; } = 0;
     public string? msg { get; set; }
     public const int SuccessCode = 0;
+}
+
+public class GlobalExceptionHandler : IExceptionHandler
+{
+    private readonly ILogger<GlobalExceptionHandler> _logger;
+
+    // Inject the built-in logger via constructor
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    {
+        _logger = logger;
+    }
+
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        // 1. Log the internal exception safely on the server
+        _logger.LogError(exception, "An unhandled exception occurred: {Message}", exception.Message);
+
+        // 2. Map different exceptions to distinct HTTP Status Codes
+        var (statusCode, title) = exception switch
+        {
+            ArgumentException => (StatusCodes.Status400BadRequest, "Bad Request"),
+            KeyNotFoundException => (StatusCodes.Status404NotFound, "Resource Not Found"),
+            _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
+        };
+
+        // 3. Create a standardized Problem Details payload
+        var problemDetails = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = title,
+            Detail = exception.Message, // Consider masking this detail in Production envs
+            Instance = httpContext.Request.Path
+        };
+
+        // 4. Configure the HTTP context response
+        httpContext.Response.StatusCode = statusCode;
+
+        //return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+        //{
+        //    HttpContext = httpContext,
+        //    ProblemDetails = problemDetails
+        //});
+
+
+        // 5. Serialize and write the response back to the client
+
+        //await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        IndexModel.errorMessage = "this is it!";
+        //httpContext.Response.Redirect("/Index?errorNo="+statusCode+"&errorMessage="+exception.Message);
+
+        //string targetUrl = QueryHelpers.AddQueryString("/dashboard", exception.Message);
+
+
+        //string encodedValue = HttpUtility.UrlEncode(exception.Message);
+        //string key = "msg";
+        //string targetPage = "/Index";
+        //string redirectUrl = $"{targetPage}?{key}={exception.Message}";
+        //httpContext.Response.Redirect(redirectUrl);
+
+
+
+        //httpContext.Response.Redirect("/Index?msg="+exception.Message);
+        // Return true to signal that this exception has been successfully handled
+        return true;
+    }
 }

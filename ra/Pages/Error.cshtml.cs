@@ -1,6 +1,11 @@
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Graph.Models;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.ComponentModel;
+
 
 namespace ra.Pages
 {
@@ -14,7 +19,17 @@ namespace ra.Pages
 
         public void OnGet()
         {
+            HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+
             RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            var exceptionHandlerFeature =  HttpContext.Features.Get<IExceptionHandlerFeature>();
+            var feature = HttpContext.Features.Get<IExceptionHandlerFeature>();
+
+            var undhandledException = feature?.Error;
+            IndexModel.errorNo = Request.Query["errorNo"];
+            IndexModel.errorMessage = Request.Query["errorMessage"];
+
+
         }
     }
 

@@ -20,9 +20,6 @@
                 <label id="lblDate" name="lblDate"></label>
                 <br /> <br />
 
-                <div id="result">
-   
-                </div>
                 <div id="divSensorData" name="divSensorData" style="width:100%;margin-bottom:25px">
                     <table id="SensorTable" name="SensorTable" class="sensorTblClass"></table>
                     <span id="spnRunTime" name="spnRunTime">
@@ -40,6 +37,9 @@
                             </td>
                             <td>
                                 <input type="button" onclick="SaveToDB()" value="Fetch And Save" title="Save to database" />
+                            </td>
+                            <td>
+                                <input type="submit"  asp-page-handler="ForceError"  value="Force Error" id="btnForceError" style="visibility: hidden;" />
                             </td>
                         </tr>
                         <tr><td></td></tr>
@@ -120,8 +120,10 @@
                 document.addEventListener('DOMContentLoaded', () => {
                     getSensorData();
                     // PopulateDatesDropDown();
+                                           
+
                 });
-                const successCode = 0;
+                let successCode = 0;
                 var waitModal = new bootstrap.Modal(document.getElementById('waitModal'));
 
                 $(function() { 
@@ -134,13 +136,8 @@
                         // Update hidden inputs whenever the user picks a new range
                         $('#startDate').val(start.format('YYYY-MM-DD'));
                         $('#endDate').val(end.format('YYYY-MM-DD'));
-                        
-                      
-
-
                         console.log("hidStartDate: "+ $('#hidStartDate').val());
                         console.log("hidEndDate: "+ $('#hidEndDate').val());
-
                     });
                                            
                     // $('#hidStartDate').val($('#datePickerDisplay').data('daterangepicker').startDate);
@@ -149,11 +146,8 @@
                     // Populate initial default hidden values on page load
                     $('#startDate').val($('#datePickerDisplay').data('daterangepicker').startDate.format('YYYY-MM-DD'));
                     $('#endDate').val($('#datePickerDisplay').data('daterangepicker').endDate.format('YYYY-MM-DD'));
-     
-
+  
                     PopulateDatesDropDown();
-                    console.log("daterangepicker");
-
                 });
 
                 function am(label,message)
@@ -178,29 +172,33 @@
                     PopulateDatesDropDown();
                 });
 
-                  async function viewHistory(){
-                    // var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
-                    // myModal.show();
-                    historyDDL = document.getElementById("ddlDates");
-                    document.getElementById("hidViewDate").value = historyDDL.value;
-                    const returnVal = await fetch("/Index?handler=ViewHistory", {
-                      method: "POST",
-                      data: JSON.stringify({ targetDate: historyDDL.value }),
-                      body: $('#mainForm').serialize(),
-                      headers: {
-                        "Content-type": "application/x-www-form-urlencoded",
-                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
-                      }
-                  });
-                  const data = await returnVal.json();
-                  if (data.isError) {
-                  } else {
-                  }
-                    document.getElementById("HistoryModalBody").innerHTML = data;
-                    document.getElementById("HistoryModalTitle").innerHTML = "Data pulled: "  + historyDDL.value;
-                    $('#historyModal').modal('show');               
+                 async function viewHistory(){
+                        // var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
+                        // myModal.show();
+                        historyDDL = document.getElementById("ddlDates");
+                        document.getElementById("hidViewDate").value = historyDDL.value;
+                        const returnVal = await fetch("/Index?handler=ViewHistory", {
+                          method: "POST",
+                          data: JSON.stringify({ targetDate: historyDDL.value }),
+                          body: $('#mainForm').serialize(),
+                          headers: {
+                            "Content-type": "application/x-www-form-urlencoded",
+                            "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                          }
+                      });
+                  
+                      const data = await returnVal.json();
+                      if (data.isError) { 
+                        document.getElementById("hidMessage").value = data.msg;
+                        document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** View History failed ***</span>";
+                        document.getElementById("stdModalBody").innerHTML = data.msg;
+                        $('#stdModal').modal('show');
+                      } else {
+                        document.getElementById("HistoryModalBody").innerHTML = data;
+                        document.getElementById("HistoryModalTitle").innerHTML = "Data pulled: "  + historyDDL.value;
+                        $('#historyModal').modal('show');               
+                     }
                  }
-
                 async function publishData(){
                     // var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
                     // myModal.show();
@@ -210,25 +208,25 @@
                     document.getElementById("hidPublish").value = "1";
 
                     const returnVal = await fetch("/Index?handler=PublishData", {
-                      method: "POST",
-                      data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
-                      body: $('#mainForm').serialize(),
-                      headers: {
-                        "Content-type": "application/x-www-form-urlencoded",
-                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
-                      }
-                  });
-                  const data = await returnVal.json();
-                  if (data.isError) {
-                      document.getElementById("hidMessage").value = data.msg;
-                      document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Publish failed ***</span>";
-                      document.getElementById("stdModalBody").innerHTML = data.msg;
-                      $('#stdModal').modal('show');
-                  } else {
-                      document.getElementById("stdModalTitle").innerHTML = "<span style='font-weight:bold;'>DC OPS</span>";
-                      document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
-                      $('#stdModal').modal('show');
-                 }
+                          method: "POST",
+                          data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
+                          body: $('#mainForm').serialize(),
+                          headers: {
+                            "Content-type": "application/x-www-form-urlencoded",
+                            "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                          }
+                      });
+                      const data = await returnVal.json();
+                      if (data.isError) {
+                          document.getElementById("hidMessage").value = data.msg;
+                          document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Publish failed ***</span>";
+                          document.getElementById("stdModalBody").innerHTML = data.msg;
+                          $('#stdModal').modal('show');
+                      } else {
+                          document.getElementById("stdModalTitle").innerHTML = "<span style='font-weight:bold;'>DC OPS</span>";
+                          document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
+                          $('#stdModal').modal('show');
+                     }
                    // myModal.hide();
                  }
                 async function SaveToDB(){
@@ -284,7 +282,7 @@
                       document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
                       $('#stdModal').modal('show');
                  }
-                  myModal.hide();
+                 myModal.hide();
                 }
                 async function PopulateDatesDropDown(){
                       // const response = await fetch('/Index?handler=PopulateDatesDropDown'); 
@@ -297,26 +295,32 @@
                         "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
                       }
                     });
-                    const data = await response.json();
-                    dropdown = document.getElementById("ddlDates");
-                    dropdown.length = 0;
-                    data.forEach(item => {
-                        const option = new Option(item);
-                        dropdown.add(option);
-                    });
-                    if (dropdown.length == 0) {
-                        document.getElementById("btnView").disabled = true;
-                        document.getElementById("btnView").style.opacity = "0.5";
-                        document.getElementById("stdModalTitle").innerHTML = "<span style='color:black;font-weight:bold;'>No records found</span>";
-                        document.getElementById("stdModalBody").innerHTML = "Please change the search criteria.";
-                        document.getElementById("btnView").title = "No records to view";
-                        $('#stdModal').modal('show');
-                    } else {
-                        document.getElementById("btnView").disabled = false;
-                        document.getElementById("btnView").style.opacity = "1";
-                        document.getElementById("btnView").title = "View selected history record";
-                    };
-
+                    try {
+                        const ddlData = await response.json();
+ 
+                        dropdown = document.getElementById("ddlDates");
+                        dropdown.length = 0;
+                        ddlData.forEach(item => {
+                            const option = new Option(item);
+                            dropdown.add(option);
+                        });
+                        if (dropdown.length == 0) {
+                            document.getElementById("btnView").disabled = true;
+                            document.getElementById("btnView").style.opacity = "0.5";
+                            document.getElementById("stdModalTitle").innerHTML = "<span style='color:black;font-weight:bold;'>No records found</span>";
+                            document.getElementById("stdModalBody").innerHTML = "Please review the search criteria.";
+                            document.getElementById("btnView").title = "No records to view";
+                            $('#stdModal').modal('show');
+                        } else {
+                            document.getElementById("btnView").disabled = false;
+                            document.getElementById("btnView").style.opacity = "1";
+                            document.getElementById("btnView").title = "View selected history record";
+                        };
+                   } catch (ex){
+                         console.log("Error details:", ex.message);
+                   } finally {
+                         waitModal.hide();
+                   }
                 }
                 async function getSensorData() { 
                   $('#waitModal').modal('show');
@@ -328,7 +332,6 @@
 
                         const response = await fetch('/Index?handler=GetData'); // hits 'OnGetGetData' server side
                         const data = await response.json(); 
-
                         const generalResponse = await fetch('/Index?handler=GetGeneral');
                         const genData = await generalResponse.json();
 
@@ -352,7 +355,12 @@
                             }
                             // cell5.innerHTML = runStamp;
                         }
-                        
+                        // var row = tableBody.insertRow();
+                        // var cell1 = row.insertCell(0); 
+                        // cell1.innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
+                        // cell1.style = "border:none;font-size:12px;"
+
+
                         var header = tableBody.createTHead();
                         var row = header.insertRow(0);
                         // cell = row.insertCell(0);
@@ -367,7 +375,6 @@
                         cell.innerHTML = "<b>Sensor</b>";
                         document.getElementById("lblRunStamp").innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
                         document.getElementById("lblRunStamp").style.left = document.getElementById("SensorTable").getBoundingClientRect().left + "px";
-                        // alert("leaving getsensordata:"+ document.getElementById('divSensorData').innerHTML);
                     } catch (error) {
                         alert('getSensorData Error:' + error);
                     }

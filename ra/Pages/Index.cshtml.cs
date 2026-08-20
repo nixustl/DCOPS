@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Graph.Models.Security;
 //using Newtonsoft.Json;
 //using System.Text.Json;
 
@@ -19,8 +20,9 @@ namespace ra.Pages
         public static string? SensorData8910 { get; set; } 
         public static string? SensorDataHarmon { get; set; } 
         public static General? metaData { get; set; }
-        public static string? ChillerData { get; set; } 
-
+        public static string? ChillerData { get; set; }
+        public static string? errorNo { get; set; } = "404";
+        public static string? errorMessage { get; set; } = "this is error message";
         public void OnGet()
         {
         }
@@ -37,6 +39,13 @@ namespace ra.Pages
         {
             await DBFetch();
 
+            return new JsonResult("ok");
+        }
+        public JsonResult OnPostForceError()
+        {
+            var x = 1;
+            var y = 0;
+            var z = x / y;
             return new JsonResult("ok");
         }
         public async Task<JsonResult> OnPostPopulateDatesDropDown()
@@ -106,9 +115,25 @@ namespace ra.Pages
         }
         public JsonResult OnPostViewHistory()
         {
-            string targetDate = Request.Form["hidViewDate"].ToString();
-            string htmlReturned = Tools.GetHistory(targetDate);
-            return new JsonResult(htmlReturned);
+            JsonResult jr;
+            string htmlReturned = string.Empty;
+            try
+            {
+                string targetDate = Request.Form["hidViewDate"].ToString();
+                 htmlReturned = Tools.GetHistory(targetDate);
+                jr = new JsonResult(htmlReturned);
+            }
+            catch (Exception ex)
+            {
+                DCOPS_Message dcm = new DCOPS_Message();
+                dcm.isError = true;
+                dcm.msg = ex.Message;
+                jr = new JsonResult(dcm);
+            } finally
+            {
+            }
+            return jr;
+
         }
         private static async Task<JsonResult> DBFetch()
         {
