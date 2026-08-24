@@ -135,21 +135,28 @@ namespace ra
             }
             return sDates;
         }
-        public async static Task<DCOPS_Message> SaveToDB(string html, DateTime runDate)
+        public async static Task<DCOPS_Message> SaveToDB(string html, DateTime runDate, DCOPS_Message dcm)
         {
-            string connectionString = ApplicationConfiguration.GetSetting("ConnectionStrings:Postgres");
-
-            await using var dataSource = NpgsqlDataSource.Create(connectionString);
-
             DCOPS_Message DCOPS_return_message = new DCOPS_Message();
+            try
+            {
+                string connectionString = ApplicationConfiguration.GetSetting("ConnectionStrings:Postgres");
+                await using var dataSource = NpgsqlDataSource.Create(connectionString);
+                await using var command = dataSource.CreateCommand("INSERT INTO  \"sensorHistory\" (run_dt , html) VALUES ($1, $2);");
+                command.Parameters.AddWithValue(runDate);
+                command.Parameters.AddWithValue(html);
 
-            await using var command = dataSource.CreateCommand("INSERT INTO  \"sensorHistory\" (run_dt , html) VALUES ($1, $2);");
-            command.Parameters.AddWithValue(runDate);
-            command.Parameters.AddWithValue(html);
+                int rowsAffected = await command.ExecuteNonQueryAsync();
 
-            int rowsAffected = await command.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                dcm.isError = true;
+                dcm.errorNumber = ex.HResult;
+                dcm.msg = ex.Message;
+            }
 
-            return DCOPS_return_message;
+            return dcm;
 
         }
         public async static Task<DCOPS_Message> DBFetch(DateTime startDate, DateTime endDate)

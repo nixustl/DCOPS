@@ -31,16 +31,18 @@ namespace ra.Pages
         }
         public async Task<JsonResult> OnPostSaveToDB()
         {
-            await SaveToDB(Request.Form["hidEmailBody"], DateTime.Parse(Request.Form["hidRunStamp"]));
+            JsonResult jr;
+            DCOPS_Message dcm = new DCOPS_Message();
+            await Tools.SaveToDB(Request.Form["hidEmailBody"], DateTime.Parse(Request.Form["hidRunStamp"]), dcm);
 
-            return new JsonResult("ok");
+            return new JsonResult(dcm);
         }
-        public async Task<JsonResult> OnPostDBFetch()
-        {
-            await DBFetch();
+        //public async Task<JsonResult> OnPostDBFetch()
+        //{
+        //    await DBFetch();
 
-            return new JsonResult("ok");
-        }
+        //    return new JsonResult("ok");
+        //}
         public JsonResult OnPostForceError()
         {
             var x = 1;
@@ -58,60 +60,74 @@ namespace ra.Pages
         }
         public JsonResult OnGetGetData()
         {
-            Task t = Task.Run(() => GetSensorData()); 
-            t.Wait();
-
-            Rootobject ds = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(IndexModel.SensorData);
-            metaData = ds.general;
-
-            List <Digitalsensor> SensorData = new List<Digitalsensor>();
-
-            foreach (var r in ds.digitalSensors)
+            JsonResult jr;
+            try
             {
-                if (!String.IsNullOrEmpty(r.label) && r.label.IndexOf("ADSB 106 AC") > -1)
+                Task t = Task.Run(() => GetSensorData());
+                t.Wait();
+
+                List<Digitalsensor> SensorData = new List<Digitalsensor>();
+
+                Rootobject ds = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(IndexModel.SensorData);
+                metaData = ds.general;
+
+
+                foreach (var r in ds.digitalSensors)
                 {
-                    r.temperature = Tools.ToFarenheit(r.temperature);
-                    SensorData.Add(r);
+                    if (!String.IsNullOrEmpty(r.label) && r.label.IndexOf("ADSB 106 AC") > -1)
+                    {
+                        r.temperature = Tools.ToFarenheit(r.temperature);
+                        SensorData.Add(r);
+                    }
                 }
+
+                t = Task.Run(() => GetSensorData8910());
+                t.Wait();
+
+                Rootobject ds8910 = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(SensorData8910);
+
+                foreach (var r in ds8910.digitalSensors)
+                {
+                    if (!String.IsNullOrEmpty(r.label) && r.label.IndexOf("ADSB") > -1)
+                    {
+                        r.temperature = Tools.ToFarenheit(r.temperature);
+                        SensorData.Add(r);
+                    }
+                }
+
+                t = Task.Run(() => GetSensorDataHarmon());
+                t.Wait();
+
+                Rootobject dsHarmon = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(SensorDataHarmon);
+
+                foreach (var r in dsHarmon.digitalSensors)
+                {
+                    if (!String.IsNullOrEmpty(r.label) && r.label.IndexOf("HAPG") > -1)
+                    {
+                        r.temperature = Tools.ToFarenheit(r.temperature);
+                        SensorData.Add(r);
+                    }
+                }
+
+                t = Task.Run(() => GetChillerData());
+                t.Wait();
+
+                Digitalsensor Chiller = new Digitalsensor();
+                Chiller.label = "Water Chiller Out";
+                Chiller.temperature = float.Parse(ChillerData);
+                SensorData.Add(Chiller);
+                jr = new JsonResult(SensorData);
+
+            }
+            catch (Exception ex)
+            {
+                DCOPS_Message dcm = new DCOPS_Message();
+                dcm.isError = true;
+                dcm.msg = ex.Message;
+                jr = new JsonResult(dcm);
             }
 
-            t = Task.Run(() => GetSensorData8910());
-            t.Wait();
-
-            Rootobject ds8910 = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(SensorData8910);
-
-            foreach (var r in ds8910.digitalSensors)
-            {
-                if (!String.IsNullOrEmpty(r.label) && r.label.IndexOf("ADSB") > -1)
-                {
-                    r.temperature = Tools.ToFarenheit(r.temperature);
-                    SensorData.Add(r);
-                }
-            }
-
-            t = Task.Run(() => GetSensorDataHarmon());
-            t.Wait();
-
-            Rootobject dsHarmon = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(SensorDataHarmon);
-
-            foreach (var r in dsHarmon.digitalSensors)
-            {
-                if (!String.IsNullOrEmpty(r.label) && r.label.IndexOf("HAPG") > -1)
-                {
-                    r.temperature = Tools.ToFarenheit(r.temperature);
-                    SensorData.Add(r);
-                }
-            }
-
-            t = Task.Run(() => GetChillerData());
-            t.Wait();
-
-            Digitalsensor Chiller = new Digitalsensor();
-            Chiller.label = "Water Chiller Out";
-            Chiller.temperature = float.Parse(ChillerData);
-            SensorData.Add(Chiller);
-
-            return new JsonResult(SensorData);
+            return jr;
         }
         public JsonResult OnPostViewHistory()
         {
@@ -120,7 +136,7 @@ namespace ra.Pages
             try
             {
                 string targetDate = Request.Form["hidViewDate"].ToString();
-                 htmlReturned = Tools.GetHistory(targetDate);
+                htmlReturned = Tools.GetHistory(targetDate);
                 jr = new JsonResult(htmlReturned);
             }
             catch (Exception ex)
@@ -140,11 +156,11 @@ namespace ra.Pages
             DCOPS_Message returnMessage = await Tools.DBFetch(new DateTime(2026, 7, 20), new DateTime(2026, 7, 21));
             return new JsonResult(returnMessage);
         }
-        private static async Task<JsonResult> SaveToDB(string html, DateTime runDate)
-        {
-            DCOPS_Message returnMessage = await Tools.SaveToDB(html, runDate);
-            return new JsonResult(returnMessage);
-        }
+        //private static async Task<JsonResult> SaveToDB(string html, DateTime runDate, DCOPS_Message dcm)
+        //{
+        //    dcm = await Tools.SaveToDB(html, runDate);
+        //    return new JsonResult(dcm);
+        //}
         public JsonResult OnGetGetGeneral()
         {
             return new JsonResult(metaData);

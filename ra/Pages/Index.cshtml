@@ -82,7 +82,7 @@
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="stdModal" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal fade" id="stdModal" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style=" z-index: 1060 !important;">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content" style="background-color:#F0F8FF;">
                     <div class="modal-header">
@@ -92,7 +92,7 @@
                         Body 
                     </div>
                     <div class="modal-footer center" style="text-align:center;">
-                        <button type="button" data-bs-dismiss="modal">Okay</button>
+                        <button type="button" data-bs-dismiss="modal" onclick="$('#waitModal').modal('hide');">Okay</button>
                     </div>
                 </div>
             </div>
@@ -243,10 +243,9 @@
                         "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
                         }
                     });
-                    // document.getElementById("waitModal").modal("close");
-                    const data = await returnVal.json();
+                    const data = await returnVal.json(); 
                     document.getElementById("spnRunTime").style.display = "block"
-                    
+                    console.log(data);
                     if (data.isError) { 
                         document.getElementById("hidMessage").value = data.msg;
                         document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Save to database failed ***</span>";
@@ -323,60 +322,68 @@
                    }
                 }
                 async function getSensorData() { 
+                  $('#waitModal').modal('hide');
                   $('#waitModal').modal('show');
                   var runStamp = new Date().toLocaleString(); 
-                  try {
+
                         document.getElementById("hidRunStamp").value = runStamp;
                         const tableBody = document.getElementById("SensorTable");
                         tableBody.innerHTML="";
 
                         const response = await fetch('/Index?handler=GetData'); // hits 'OnGetGetData' server side
                         const data = await response.json(); 
-                        const generalResponse = await fetch('/Index?handler=GetGeneral');
-                        const genData = await generalResponse.json();
+                        console.log(data.isError);
 
-                        document.body.style.cursor = 'wait';
+                        if (data.isError) {
+                            document.getElementById("hidMessage").value = data.msg;
+                            document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Get sensor data failed ***</span>";
+                            document.getElementById("stdModalBody").innerHTML = data.msg; 
+                            $('#stdModal').modal('show');
+                        } else {
 
-                        for (var sensor of data) {
-                            // alert("getSensorData():" + sensor.label);
-                            var row = tableBody.insertRow();  
-                            var cell1 = row.insertCell(0);cell1.style.width="320px"; // sensor name
-                            var cell2 = row.insertCell(1);cell2.style.width="180px"; // temp
-                            var cell3 = row.insertCell(2);cell3.style.width="180px"; // humidity
-                            var cell4 = row.insertCell(3);cell4.style.width="180px"; // alarm
-                            // var cell5 = row.insertCell(4);cell5.style.width="180px"; // timestamp
-                            cell1.innerHTML = sensor.label;
-                            cell2.innerHTML = sensor.temperature;
-                            cell3.innerHTML = sensor.humidity;
-                            if (sensor.alarmState) {
-                                cell4.innerHTML = "<span style='color:red;font-weight:bold;'>"+sensor.alarmState+"</span>";
-                            } else {
-                                cell4.innerHTML = sensor.alarmState;
+                            // const generalResponse = await fetch('/Index?handler=GetGeneral');
+                            // const genData = await generalResponse.json();
+
+                            document.body.style.cursor = 'wait';
+
+                            for (var sensor of data) {
+                                // alert("getSensorData():" + sensor.label);
+                                var row = tableBody.insertRow();  
+                                var cell1 = row.insertCell(0);cell1.style.width="320px"; // sensor name
+                                var cell2 = row.insertCell(1);cell2.style.width="180px"; // temp
+                                var cell3 = row.insertCell(2);cell3.style.width="180px"; // humidity
+                                var cell4 = row.insertCell(3);cell4.style.width="180px"; // alarm
+                                // var cell5 = row.insertCell(4);cell5.style.width="180px"; // timestamp
+                                cell1.innerHTML = sensor.label;
+                                cell2.innerHTML = sensor.temperature;
+                                cell3.innerHTML = sensor.humidity;
+                                if (sensor.alarmState) {
+                                    cell4.innerHTML = "<span style='color:red;font-weight:bold;'>"+sensor.alarmState+"</span>";
+                                } else {
+                                    cell4.innerHTML = sensor.alarmState;
+                                }
+                                // cell5.innerHTML = runStamp;
                             }
-                            // cell5.innerHTML = runStamp;
-                        }
-                        // var row = tableBody.insertRow();
-                        // var cell1 = row.insertCell(0); 
-                        // cell1.innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
-                        // cell1.style = "border:none;font-size:12px;"
+                            // var row = tableBody.insertRow();
+                            // var cell1 = row.insertCell(0); 
+                            // cell1.innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
+                            // cell1.style = "border:none;font-size:12px;"
 
 
-                        var header = tableBody.createTHead();
-                        var row = header.insertRow(0);
-                        // cell = row.insertCell(0);
-                        // cell.innerHTML = "<b>TimeStamp</b>";
-                        var cell = row.insertCell(0);
-                        cell.innerHTML = "<b>Alarm</b>"; cell.classList.add("sensorWidth");
-                        var cell_humidity = row.insertCell(0);
-                        cell_humidity.innerHTML = "<b>Humidity</b>";
-                        cell = row.insertCell(0);
-                        cell.innerHTML = "<b>Temperature</b>";
-                        cell = row.insertCell(0);
-                        cell.innerHTML = "<b>Sensor</b>";
-                        document.getElementById("lblRunStamp").innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
-                        document.getElementById("lblRunStamp").style.left = document.getElementById("SensorTable").getBoundingClientRect().left + "px";
-                    } catch (error) {
-                        alert('getSensorData Error:' + error);
+                            var header = tableBody.createTHead();
+                            var row = header.insertRow(0);
+                            // cell = row.insertCell(0);
+                            // cell.innerHTML = "<b>TimeStamp</b>";
+                            var cell = row.insertCell(0);
+                            cell.innerHTML = "<b>Alarm</b>"; cell.classList.add("sensorWidth");
+                            var cell_humidity = row.insertCell(0);
+                            cell_humidity.innerHTML = "<b>Humidity</b>";
+                            cell = row.insertCell(0);
+                            cell.innerHTML = "<b>Temperature</b>";
+                            cell = row.insertCell(0);
+                            cell.innerHTML = "<b>Sensor</b>";
+                            document.getElementById("lblRunStamp").innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
+                            document.getElementById("lblRunStamp").style.left = document.getElementById("SensorTable").getBoundingClientRect().left + "px";
                     }
                     $('#waitModal').modal('hide');
                     document.body.style.cursor = 'default';
