@@ -26,8 +26,6 @@ namespace ra.Pages
             var feature = HttpContext.Features.Get<IExceptionHandlerFeature>();
 
             var undhandledException = feature?.Error;
-            IndexModel.errorNo = Request.Query["errorNo"];
-            IndexModel.errorMessage = Request.Query["errorMessage"];
 
 
         }

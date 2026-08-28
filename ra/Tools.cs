@@ -16,7 +16,6 @@ namespace ra
     public class Tools
     {
 
-
         public static class ApplicationConfiguration
         {
             private static IConfigurationRoot _configuration;
@@ -33,42 +32,10 @@ namespace ra
             }
         }
 
-
         public static float ToFarenheit(float celVal)
         {
             return (float) Math.Round((celVal * 1.8) + 32, 2);
         }
-
-
-        public static void sendMail()
-        {
-            try
-            {
-                var mailMessage = new MimeMessage();
-                mailMessage.From.Add(new MailboxAddress("from name", "trosenbaum@uark.edu"));
-                mailMessage.To.Add(new MailboxAddress("to name", "trosenbaum@uark.edu"));
-                mailMessage.Subject = "subject";
-                mailMessage.Body = new TextPart("plain")
-                {
-                    Text = "Hello"
-                };
-
-                using (var smtpClient = new MailKit.Net.Smtp.SmtpClient())
-                {
-                    smtpClient.Connect("smtp.office365.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-                    smtpClient.Authenticate("roomalertsvc@uark.edu", "(bP&t\\o0?ti.'}H`6KRf");
-                    smtpClient.Send(mailMessage);
-                    smtpClient.Disconnect(true);
-                }
-
-            }
-            catch (Exception ex)
-            {
-
-                throw;
-            }
-        }
-
 
         // PublishData posts HTML sensor data to Team RoomAlert feed
         public async static Task<DCOPS_Message> PublishData(string body, string runStamp, DCOPS_Message returnMessage)
@@ -117,7 +84,6 @@ namespace ra
             {
                 returnHtml = "<span style='font-size:24px;'> No records found.";
             }
-             
             return returnHtml;
         }
         public async static Task<List<string>> PopulateDates(DateTime startDate, DateTime endDate)
@@ -128,12 +94,12 @@ namespace ra
             command.Parameters.AddWithValue(startDate);
             command.Parameters.AddWithValue(endDate);
             await using var reader = await command.ExecuteReaderAsync();
-            List<string> sDates = new List<string>();
+            List<string> DateList = new List<string>();
             while (await reader.ReadAsync())
             {
-                sDates.Add(reader.GetFieldValue<DateTime>(0).ToString());
+                DateList.Add(reader.GetFieldValue<DateTime>(0).ToString());
             }
-            return sDates;
+            return DateList;
         }
         public async static Task<DCOPS_Message> SaveToDB(string html, DateTime runDate, DCOPS_Message dcm)
         {
@@ -145,28 +111,22 @@ namespace ra
                 await using var command = dataSource.CreateCommand("INSERT INTO  \"sensorHistory\" (run_dt , html) VALUES ($1, $2);");
                 command.Parameters.AddWithValue(runDate);
                 command.Parameters.AddWithValue(html);
-
                 int rowsAffected = await command.ExecuteNonQueryAsync();
-
             }
             catch (Exception ex)
             {
                 dcm.isError = true;
                 dcm.errorNumber = ex.HResult;
                 dcm.msg = ex.Message;
+                dcm.stacktrace = ex.StackTrace;
             }
-
             return dcm;
-
         }
         public async static Task<DCOPS_Message> DBFetch(DateTime startDate, DateTime endDate)
         {
             string connectionString = ApplicationConfiguration.GetSetting("ConnectionStrings:Postgres");
-
             await using var dataSource = NpgsqlDataSource.Create(connectionString);
-
             DCOPS_Message DCOPS_return_message = new DCOPS_Message();
-
             await using var command = dataSource.CreateCommand("SELECT getsensordata($1,$2);");
             command.Parameters.AddWithValue(startDate);
             command.Parameters.AddWithValue(endDate);
@@ -177,11 +137,7 @@ namespace ra
                 string username = reader.GetString(0);
                 string email = reader.GetString(1);
             }
-
-
             return DCOPS_return_message;
-
         }
-
     }
 }

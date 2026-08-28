@@ -161,6 +161,7 @@ public class DCOPS_Message
     public bool isError { get; set; }
     public int errorNumber { get; set; } = 0;
     public string? msg { get; set; }
+    public string? stacktrace { get; set; }
     public const int SuccessCode = 0;
 }
 
@@ -212,7 +213,6 @@ public class GlobalExceptionHandler : IExceptionHandler
         // 5. Serialize and write the response back to the client
 
         //await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
-        IndexModel.errorMessage = "this is it!";
         //httpContext.Response.Redirect("/Index?errorNo="+statusCode+"&errorMessage="+exception.Message);
 
         //string targetUrl = QueryHelpers.AddQueryString("/dashboard", exception.Message);

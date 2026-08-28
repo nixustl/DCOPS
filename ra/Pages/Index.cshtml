@@ -120,8 +120,6 @@
                 document.addEventListener('DOMContentLoaded', () => {
                     getSensorData();
                     // PopulateDatesDropDown();
-                                           
-
                 });
                 let successCode = 0;
                 var waitModal = new bootstrap.Modal(document.getElementById('waitModal'));
@@ -140,9 +138,6 @@
                         console.log("hidEndDate: "+ $('#hidEndDate').val());
                     });
                                            
-                    // $('#hidStartDate').val($('#datePickerDisplay').data('daterangepicker').startDate);
-                    // $('#hidEndDate').val($('#datePickerDisplay').data('daterangepicker').endDate);
-
                     // Populate initial default hidden values on page load
                     $('#startDate').val($('#datePickerDisplay').data('daterangepicker').startDate.format('YYYY-MM-DD'));
                     $('#endDate').val($('#datePickerDisplay').data('daterangepicker').endDate.format('YYYY-MM-DD'));
@@ -162,7 +157,6 @@
                 });
 
                 $('#datePickerDisplay').on('apply.daterangepicker', function(ev, picker) {
-                    // Access the selected start and end dates
                     var startDate = picker.startDate.format('YYYY-MM-DD');
                     var endDate = picker.endDate.format('YYYY-MM-DD');
 
@@ -206,7 +200,7 @@
 
                     document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
                     document.getElementById("hidPublish").value = "1";
-
+                    $('#waitModal').modal('show');
                     const returnVal = await fetch("/Index?handler=PublishData", {
                           method: "POST",
                           data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
@@ -227,6 +221,7 @@
                           document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
                           $('#stdModal').modal('show');
                      }
+                     $('#waitModal').modal('hide');
                    // myModal.hide();
                  }
                 async function SaveToDB(){
@@ -249,7 +244,7 @@
                     if (data.isError) { 
                         document.getElementById("hidMessage").value = data.msg;
                         document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Save to database failed ***</span>";
-                        document.getElementById("stdModalBody").innerHTML = data.msg;
+                        document.getElementById("stdModalBody").innerHTML = data.msg;  // + "<br/>" + "<b>Stacktrace: </b><br/>" + data.stacktrace;
                         $('#stdModal').modal('show');
                     } else {
                         document.getElementById("stdModalTitle").innerHTML = "<span style='font-weight:bold;'>DC OPS</span>";
@@ -284,7 +279,6 @@
                  myModal.hide();
                 }
                 async function PopulateDatesDropDown(){
-                      // const response = await fetch('/Index?handler=PopulateDatesDropDown'); 
                       const response = await fetch("/Index?handler=PopulateDatesDropDown", {
                       method: "POST",
                       // data: JSON.stringify({ "sDate": historyDDL.value }),
@@ -294,9 +288,16 @@
                         "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
                       }
                     });
-                    try {
-                        const ddlData = await response.json();
- 
+                    
+                    const ddlData = await response.json();
+                    waitModal.hide();
+
+                    if (ddlData.isError) {
+                        document.getElementById("hidMessage").value = ddlData.msg;
+                        document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Populate DropDown failed ***</span>";
+                        document.getElementById("stdModalBody").innerHTML = ddlData.msg;
+                        $('#stdModal').modal('show');
+                    } else {
                         dropdown = document.getElementById("ddlDates");
                         dropdown.length = 0;
                         ddlData.forEach(item => {
@@ -315,11 +316,7 @@
                             document.getElementById("btnView").style.opacity = "1";
                             document.getElementById("btnView").title = "View selected history record";
                         };
-                   } catch (ex){
-                         console.log("Error details:", ex.message);
-                   } finally {
-                         waitModal.hide();
-                   }
+                    }
                 }
                 async function getSensorData() { 
                   $('#waitModal').modal('hide');
@@ -390,7 +387,6 @@
                     
                 }
                 async function PrePublish() {
-                    alert("Prepublish "+ document.getElementById('divSensorData').innerHTML);
                     document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
                     document.getElementById("hidPublish").value = "1";
                 }

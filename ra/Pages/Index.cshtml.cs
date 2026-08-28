@@ -6,8 +6,6 @@ using System.Xml.Linq;
 using System.Xml.XPath;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Graph.Models.Security;
-//using Newtonsoft.Json;
-//using System.Text.Json;
 
 
 namespace ra.Pages
@@ -21,8 +19,6 @@ namespace ra.Pages
         public static string? SensorDataHarmon { get; set; } 
         public static General? metaData { get; set; }
         public static string? ChillerData { get; set; }
-        public static string? errorNo { get; set; } = "404";
-        public static string? errorMessage { get; set; } = "this is error message";
         public void OnGet()
         {
         }
@@ -31,18 +27,10 @@ namespace ra.Pages
         }
         public async Task<JsonResult> OnPostSaveToDB()
         {
-            JsonResult jr;
             DCOPS_Message dcm = new DCOPS_Message();
             await Tools.SaveToDB(Request.Form["hidEmailBody"], DateTime.Parse(Request.Form["hidRunStamp"]), dcm);
-
             return new JsonResult(dcm);
         }
-        //public async Task<JsonResult> OnPostDBFetch()
-        //{
-        //    await DBFetch();
-
-        //    return new JsonResult("ok");
-        //}
         public JsonResult OnPostForceError()
         {
             var x = 1;
@@ -52,11 +40,23 @@ namespace ra.Pages
         }
         public async Task<JsonResult> OnPostPopulateDatesDropDown()
         {
+            JsonResult jr;
             DateTime dtStart = DateTime.Parse(Request.Form["datePickerDisplay"].ToString().Split(" - ")[0]);
             DateTime dtEnd = DateTime.Parse(Request.Form["datePickerDisplay"].ToString().Split(" - ")[1]);
-
-            List<string> sDates = await Tools.PopulateDates(dtStart, dtEnd);
-            return new JsonResult(sDates);
+            try
+            {
+                List<string> Dates = await Tools.PopulateDates(dtStart, dtEnd);
+                jr = new JsonResult(Dates);
+            }
+            catch (Exception ex)
+            {
+                DCOPS_Message dcm = new DCOPS_Message();
+                dcm.errorNumber = ex.HResult;
+                dcm.isError = true;
+                dcm.msg = ex.Message;
+                jr= new JsonResult(dcm);
+            }
+            return  jr;
         }
         public JsonResult OnGetGetData()
         {
@@ -149,18 +149,8 @@ namespace ra.Pages
             {
             }
             return jr;
-
         }
-        private static async Task<JsonResult> DBFetch()
-        {
-            DCOPS_Message returnMessage = await Tools.DBFetch(new DateTime(2026, 7, 20), new DateTime(2026, 7, 21));
-            return new JsonResult(returnMessage);
-        }
-        //private static async Task<JsonResult> SaveToDB(string html, DateTime runDate, DCOPS_Message dcm)
-        //{
-        //    dcm = await Tools.SaveToDB(html, runDate);
-        //    return new JsonResult(dcm);
-        //}
+  
         public JsonResult OnGetGetGeneral()
         {
             return new JsonResult(metaData);
