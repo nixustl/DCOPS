@@ -38,9 +38,6 @@
                             <td>
                                 <input type="button" onclick="SaveToDB()" value="Fetch And Save" title="Save to database" />
                             </td>
-                            <td>
-                                <input type="submit"  asp-page-handler="ForceError"  value="Force Error" id="btnForceError" style="visibility: hidden;" />
-                            </td>
                         </tr>
                         <tr><td></td></tr>
                     </table>
@@ -49,7 +46,6 @@
                     <br />
                     <div class="form-group">
                         <label>Select Date Range:</label>
-                        <!-- Visible display input -->
                         <input type="text" id="datePickerDisplay" name="datePickerDisplay" class="form-control" readonly style="width:300px; border:solid 2px #99CCFF;" />
                     </div>
                     <table>
@@ -119,10 +115,14 @@
         <script>
                 document.addEventListener('DOMContentLoaded', () => {
                     getSensorData();
-                    // PopulateDatesDropDown();
+                    const now = new Date();
+                    document.getElementById("lblDate").innerHTML = now.toDateString();
+                });
+                window.addEventListener('resize', function(event) { 
+                   document.getElementById("lblRunStamp").style.left = document.getElementById("SensorTable").getBoundingClientRect().left + "px";
                 });
                 let successCode = 0;
-                var waitModal = new bootstrap.Modal(document.getElementById('waitModal'));
+                let waitModal = new bootstrap.Modal(document.getElementById('waitModal'));
 
                 $(function() { 
                     // Initialize the JavaScript daterangepicker 
@@ -131,7 +131,6 @@
                         startDate: moment().subtract(1, 'months'),
                         endDate: moment()
                     }, function(start, end, label) { 
-                        // Update hidden inputs whenever the user picks a new range
                         $('#startDate').val(start.format('YYYY-MM-DD'));
                         $('#endDate').val(end.format('YYYY-MM-DD'));
                         console.log("hidStartDate: "+ $('#hidStartDate').val());
@@ -141,28 +140,13 @@
                     // Populate initial default hidden values on page load
                     $('#startDate').val($('#datePickerDisplay').data('daterangepicker').startDate.format('YYYY-MM-DD'));
                     $('#endDate').val($('#datePickerDisplay').data('daterangepicker').endDate.format('YYYY-MM-DD'));
-  
                     PopulateDatesDropDown();
                 });
-
-                function am(label,message)
-                {
-                    alert(label + ": "+message);
-                }
-                const now = new Date();
-                document.getElementById("lblDate").innerHTML = now.toDateString();
  
-                $('#ddlDates').on('change', function() {
-                    var selectedValue = $('#ddlDates').val();
-                });
-
                 $('#datePickerDisplay').on('apply.daterangepicker', function(ev, picker) {
                     var startDate = picker.startDate.format('YYYY-MM-DD');
                     var endDate = picker.endDate.format('YYYY-MM-DD');
-
-                    $('#hidStartDate').val(startDate);
-                    $('#hidEndDate').val(endDate);
-
+                    $('#hidStartDate').val(startDate);+
                     PopulateDatesDropDown();
                 });
 
@@ -194,13 +178,10 @@
                      }
                  }
                 async function publishData(){
-                    // var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
-                    // myModal.show();
                     await getSensorData();
-
+                    $('#waitModal').modal('show');
                     document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
                     document.getElementById("hidPublish").value = "1";
-                    $('#waitModal').modal('show');
                     const returnVal = await fetch("/Index?handler=PublishData", {
                           method: "POST",
                           data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
@@ -221,9 +202,7 @@
                           document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
                           $('#stdModal').modal('show');
                      }
-                     $('#waitModal').modal('hide');
-                   // myModal.hide();
-                 }
+                }
                 async function SaveToDB(){
                     document.getElementById("spnRunTime").style.display = "none";
                     document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
@@ -240,7 +219,6 @@
                     });
                     const data = await returnVal.json(); 
                     document.getElementById("spnRunTime").style.display = "block"
-                    console.log(data);
                     if (data.isError) { 
                         document.getElementById("hidMessage").value = data.msg;
                         document.getElementById("stdModalTitle").innerHTML = "<span style='color:red;font-weight:bold;'>*** Save to database failed ***</span>";
@@ -254,8 +232,7 @@
                     }
                 }
                 async function DBFetch(){
-                    var myModal = new bootstrap.Modal(document.getElementById('waitModal'));
-                    myModal.show();
+                    waitModal.show();
                     const returnVal = await fetch("/Index?handler=DBFetch", {
                       method: "POST",
                       data: JSON.stringify({ EmailBody: document.getElementById("hidEmailBody").value }),
@@ -276,12 +253,11 @@
                       document.getElementById("stdModalBody").innerHTML = "<span>Data has been published</span>"
                       $('#stdModal').modal('show');
                  }
-                 myModal.hide();
+                 waitModal.hide();
                 }
                 async function PopulateDatesDropDown(){
                       const response = await fetch("/Index?handler=PopulateDatesDropDown", {
                       method: "POST",
-                      // data: JSON.stringify({ "sDate": historyDDL.value }),
                       body: $('#mainForm').serialize(),
                       headers: {
                         "Content-type": "application/x-www-form-urlencoded",
@@ -319,9 +295,8 @@
                     }
                 }
                 async function getSensorData() { 
-                  $('#waitModal').modal('hide');
-                  $('#waitModal').modal('show');
-                  var runStamp = new Date().toLocaleString(); 
+                      waitModal.show();
+                      var runStamp = new Date().toLocaleString(); 
 
                         document.getElementById("hidRunStamp").value = runStamp;
                         const tableBody = document.getElementById("SensorTable");
@@ -329,7 +304,6 @@
 
                         const response = await fetch('/Index?handler=GetData'); // hits 'OnGetGetData' server side
                         const data = await response.json(); 
-                        console.log(data.isError);
 
                         if (data.isError) {
                             document.getElementById("hidMessage").value = data.msg;
@@ -344,7 +318,6 @@
                             document.body.style.cursor = 'wait';
 
                             for (var sensor of data) {
-                                // alert("getSensorData():" + sensor.label);
                                 var row = tableBody.insertRow();  
                                 var cell1 = row.insertCell(0);cell1.style.width="320px"; // sensor name
                                 var cell2 = row.insertCell(1);cell2.style.width="180px"; // temp
@@ -366,7 +339,6 @@
                             // cell1.innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
                             // cell1.style = "border:none;font-size:12px;"
 
-
                             var header = tableBody.createTHead();
                             var row = header.insertRow(0);
                             // cell = row.insertCell(0);
@@ -382,9 +354,8 @@
                             document.getElementById("lblRunStamp").innerHTML = "Data fetched: " + document.getElementById("hidRunStamp").value;
                             document.getElementById("lblRunStamp").style.left = document.getElementById("SensorTable").getBoundingClientRect().left + "px";
                     }
-                    $('#waitModal').modal('hide');
+                    waitModal.hide();
                     document.body.style.cursor = 'default';
-                    
                 }
                 async function PrePublish() {
                     document.getElementById("hidEmailBody").value = document.getElementById('divSensorData').innerHTML;
@@ -401,7 +372,6 @@
                     //$('#largeModalBody').html("modal body goes here...");
                 })
 
-           
         </script>
 }
 

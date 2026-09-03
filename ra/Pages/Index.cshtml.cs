@@ -31,13 +31,6 @@ namespace ra.Pages
             await Tools.SaveToDB(Request.Form["hidEmailBody"], DateTime.Parse(Request.Form["hidRunStamp"]), dcm);
             return new JsonResult(dcm);
         }
-        public JsonResult OnPostForceError()
-        {
-            var x = 1;
-            var y = 0;
-            var z = x / y;
-            return new JsonResult("ok");
-        }
         public async Task<JsonResult> OnPostPopulateDatesDropDown()
         {
             JsonResult jr;
